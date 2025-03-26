@@ -13,8 +13,11 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
 set(TS_FILES TeleZero_en_US.ts)
+set(QT_NO_KEYWORDS ON)
 
 set(PROJECT_SOURCES
+	camera.cpp
+	camera.h
         main.cpp
         mainwindow.cpp
         mainwindow.h
@@ -49,7 +52,10 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
+target_include_directories(TeleZero PUBLIC /usr/include/libcamera)
 target_link_libraries(TeleZero PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_directories(TeleZero PUBLIC /usr/lib/aarch64-linux-gnu)
+target_link_libraries(TeleZero PUBLIC camera)
 
 set_target_properties(TeleZero PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
