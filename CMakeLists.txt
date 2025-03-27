@@ -9,15 +9,30 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets OpenGLWidgets LinguistTools )
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGLWidgets LinguistTools)
+find_package(PkgConfig REQUIRED)
+find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
+pkg_check_modules(CAMERA REQUIRED libcamera)
+
+find_library(LIBCAMERA_LIBRARY libcamera.so REQUIRED)
+find_library(LIBCAMERA_BASE_LIBRARY libcamera-base.so REQUIRED)
 
 set(TS_FILES TeleZero_en_US.ts)
 set(QT_NO_KEYWORDS ON)
 
 set(PROJECT_SOURCES
-	camera.cpp
-	camera.h
+		camera.cpp
+		camera.h
+		LiveView.cpp
+		LiveView.h
+		Program.cpp
+		Program.h
+		Shader.cpp
+		Shader.h
+		Texture.cpp
+		Texture.h
         main.cpp
         mainwindow.cpp
         mainwindow.h
@@ -52,10 +67,11 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_include_directories(TeleZero PUBLIC /usr/include/libcamera)
-target_link_libraries(TeleZero PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+#target_include_directories(TeleZero PUBLIC /usr/include/libcamera)
+include_directories(. "${CAMERA_INCLUDE_DIRS}" "${GLEW_INCLUDE_DIRS}")
+set(LIBCAMERA_LIBRARIES "${LIBCAMERA_LIBRARY}" "${LIBCAMERA_BASE_LIBRARY}")
 target_link_directories(TeleZero PUBLIC /usr/lib/aarch64-linux-gnu)
-target_link_libraries(TeleZero PUBLIC camera)
+target_link_libraries(TeleZero PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::OpenGLWidgets "${LIBCAMERA_LIBRARIES}" "${GLEW_LIBRARIES}" OpenGL::OpenGL OpenGL::GLU)
 
 set_target_properties(TeleZero PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com

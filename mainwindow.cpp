@@ -3,6 +3,8 @@
 
 #include "camera.h"
 
+#include <QMessageBox>
+
 std::vector<int> get_selected_rows(QList<QTableWidgetItem *> list)
 {
     std::set<int> selected;
@@ -48,11 +50,24 @@ MainWindow::MainWindow(QWidget *parent)
 
 		ui->camera_list->setItem(idx, 0, new QTableWidgetItem(QString::fromStdString(cameras[i])));
 	}
+	
+	ui->pixel_format->addItem(QString::fromStdString(convert_format(libcamera::formats::YUV420)));
 }
 
 MainWindow::~MainWindow()
 {
     camera->uninitialize();
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+	// Prompt are you sure you want to continue?
+	auto reply = QMessageBox::question(this, "Quit?", "Would you like to close?", QMessageBox::Yes | QMessageBox::No);
+
+	if(reply == QMessageBox::No) {
+		event->ignore();
+		return;
+	}
 }
 
 void MainWindow::on_connect_camera_clicked()
@@ -79,10 +94,41 @@ void MainWindow::on_camera_exposure_valueChanged(){}
 
 void MainWindow::on_configure_camera_clicked()
 {
-	camera->configure_camera();
+	auto width = ui->camera_width->value();
+	auto height = ui->camera_height->value();
+	auto format = convert_format(ui->pixel_format->currentText().toStdString());
+	
+	camera->configure_camera(width, height, format);
+}
+
+void MainWindow::on_start_camera_clicked()
+{
+	camera->start_camera();
+	
+	QObject::connect(&view_idle_timer, &QTimer::timeout, this, &MainWindow::update_view);
+	
+	view_idle_timer.start();
+	view_idle_timer.setInterval(50);
+}
+
+void MainWindow::on_stop_camera_clicked()
+{
+	QObject::disconnect(view_idle_timer);
+	
+	camera->stop_camera();
 }
 
 void MainWindow::capture_path_clicked(){}
 void MainWindow::capture_begin_clicked(){}
 void MainWindow::capture_cancel_clicked(){}
 
+void MainWindow::update_view() {
+	auto width = ui->camera_width->value();
+	auto height = ui->camera_height->value();
+	
+	std::vector<uint8_t> buffer;
+	camera->grab_frame(buffer);
+	
+	ui->view->set_buffer(width, height, buffer);
+	ui->view->repaint();
+}

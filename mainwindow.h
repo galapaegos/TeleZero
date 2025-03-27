@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QTableWidget>
+#include <QTimer>
 
 #include "camera.h"
 
@@ -20,6 +21,10 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 	
+	void closeEvent(QCloseEvent *event);
+	
+	void update_view();
+	
 private Q_SLOTS:
 	void on_connect_camera_clicked();
 	void on_disconnect_camera_clicked();
@@ -29,6 +34,9 @@ private Q_SLOTS:
 	
 	void on_configure_camera_clicked();
 	
+	void on_start_camera_clicked();
+	void on_stop_camera_clicked();
+	
 	void capture_path_clicked();
 	void capture_begin_clicked();
 	void capture_cancel_clicked();
@@ -36,5 +44,7 @@ private Q_SLOTS:
 private:
     std::unique_ptr<Ui::MainWindow> ui;
     std::unique_ptr<Camera> camera;
+	
+	QTimer view_idle_timer;
 };
 #endif // MAINWINDOW_H
