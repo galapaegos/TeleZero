@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QOpenGLWidget>
 
+#include "glcheck.h"
 #include "Program.h"
 #include "Texture.h"
 
@@ -17,20 +18,20 @@ public:
     explicit LiveView(QWidget *parent = nullptr);
     ~LiveView();
 	
-	void set_buffer(const int &width, const int &height, std::vector<uint8_t> buffer);
+	void set_buffer(const int &width, const int &height, const int &channels, std::vector<uint8_t> buffer);
+	void set_buffer(const int &width, const int &height, const int &channels, const uint8_t *buffer);
 
-protected:
-	void initializeGL() override;
-	void paintGL() override;
-	void resizeGL(int w, int h) override;
+private:
+	void initializeGL();
+	void paintGL();
+	void resizeGL(int w, int h);
 	
-	void mouseMoveEvent(QMouseEvent *p) override;
-	void mousePressEvent(QMouseEvent *p) override;
-	void mouseReleaseEvent(QMouseEvent *p) override;
+	void mouseMoveEvent(QMouseEvent *p);
+	void mousePressEvent(QMouseEvent *p);
+	void mouseReleaseEvent(QMouseEvent *p);
 
 	void wheelEvent(QWheelEvent *p);
 	
-private:
 	void image_dimensions(float &fw, float &fh);
 	
 	int display_width;

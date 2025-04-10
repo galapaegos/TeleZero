@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "glcheck.h"
 #include "Shader.h"
 #include "Texture.h"
 

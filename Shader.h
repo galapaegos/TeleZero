@@ -5,6 +5,8 @@
 
 #include <GL/glew.h>
 
+#include "glcheck.h"
+
 enum class ShaderType {
     VertexShader   = GL_VERTEX_SHADER,
     FragmentShader = GL_FRAGMENT_SHADER

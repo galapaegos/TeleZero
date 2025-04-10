@@ -3,6 +3,8 @@
 
 #include <GL/glew.h>
 
+#include "glcheck.h"
+
 class Texture {
   public:
     Texture();
@@ -17,6 +19,10 @@ class Texture {
 
     void
     upload(unsigned char *ptr, const int64_t &width, const int64_t &height, const GLenum &upload_format);
+    void
+    upload(unsigned short *ptr, const int64_t &width, const int64_t &height, const GLenum &upload_format);
+    void
+    upload(float *ptr, const int64_t &width, const int64_t &height, const GLenum &upload_format);
 
     bool updated() const;
     void set_updated(const bool &updated);
