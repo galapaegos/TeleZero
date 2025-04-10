@@ -14,6 +14,7 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGLWidgets Lin
 find_package(PkgConfig REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
+find_package(TIFF REQUIRED)
 pkg_check_modules(CAMERA REQUIRED libcamera)
 
 find_library(LIBCAMERA_LIBRARY libcamera.so REQUIRED)
@@ -25,6 +26,10 @@ set(QT_NO_KEYWORDS ON)
 set(PROJECT_SOURCES
 		camera.cpp
 		camera.h
+		tiff.cpp
+		tiff.h
+		glcheck.cpp
+		glcheck.h
 		LiveView.cpp
 		LiveView.h
 		Program.cpp
@@ -68,10 +73,10 @@ else()
 endif()
 
 #target_include_directories(TeleZero PUBLIC /usr/include/libcamera)
-include_directories(. "${CAMERA_INCLUDE_DIRS}" "${GLEW_INCLUDE_DIRS}")
+include_directories(. "${CAMERA_INCLUDE_DIRS}" "${GLEW_INCLUDE_DIRS}" "${TIFF_INCLUDE_DIRS}")
 set(LIBCAMERA_LIBRARIES "${LIBCAMERA_LIBRARY}" "${LIBCAMERA_BASE_LIBRARY}")
 target_link_directories(TeleZero PUBLIC /usr/lib/aarch64-linux-gnu)
-target_link_libraries(TeleZero PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::OpenGLWidgets "${LIBCAMERA_LIBRARIES}" "${GLEW_LIBRARIES}" OpenGL::OpenGL OpenGL::GLU)
+target_link_libraries(TeleZero PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::OpenGLWidgets "${LIBCAMERA_LIBRARIES}" "${GLEW_LIBRARIES}" "${TIFF_LIBRARIES}" OpenGL::OpenGL OpenGL::GLU)
 
 set_target_properties(TeleZero PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
