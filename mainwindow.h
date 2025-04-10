@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QLabel>
 #include <QTableWidget>
 #include <QTimer>
 
@@ -29,8 +30,15 @@ private Q_SLOTS:
 	void on_connect_camera_clicked();
 	void on_disconnect_camera_clicked();
 	
+	void on_pixel_format_currentIndexChanged(int index);
+	
 	void on_camera_gain_valueChanged();
 	void on_camera_exposure_valueChanged();
+	void on_camera_brightness_valueChanged();
+	void on_camera_contrast_valueChanged();
+	void on_camera_saturation_valueChanged();
+	void on_camera_sharpness_valueChanged();
+	void on_lens_position_valueChanged();
 	
 	void on_configure_camera_clicked();
 	
@@ -44,6 +52,8 @@ private Q_SLOTS:
 private:
     std::unique_ptr<Ui::MainWindow> ui;
     std::unique_ptr<Camera> camera;
+	
+	QLabel *temperature_info;
 	
 	QTimer view_idle_timer;
 };

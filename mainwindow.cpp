@@ -51,7 +51,10 @@ MainWindow::MainWindow(QWidget *parent)
 		ui->camera_list->setItem(idx, 0, new QTableWidgetItem(QString::fromStdString(cameras[i])));
 	}
 	
-	ui->pixel_format->addItem(QString::fromStdString(convert_format(libcamera::formats::YUV420)));
+	temperature_info = new QLabel("", this);
+	temperature_info->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+	
+	statusBar()->addPermanentWidget(temperature_info, 1);
 }
 
 MainWindow::~MainWindow()
@@ -82,6 +85,13 @@ void MainWindow::on_connect_camera_clicked()
 	
 	auto selected_camera = ui->camera_list->item(selected_rows[0], 0)->text().toStdString();
 	camera->connect_camera(selected_camera);
+	
+	auto formats = camera->get_pixel_formats();
+	ui->pixel_format->clear();
+	for(auto i = 0; i < formats.size(); i++) {
+		ui->pixel_format->addItem(QString::fromStdString(formats[i]));
+	}
+	ui->pixel_format->setStyleSheet("combobox-popup: 0;");
 }
 
 void MainWindow::on_disconnect_camera_clicked()
@@ -89,16 +99,73 @@ void MainWindow::on_disconnect_camera_clicked()
 	camera->disconnect_camera();
 }
 
-void MainWindow::on_camera_gain_valueChanged(){}
-void MainWindow::on_camera_exposure_valueChanged(){}
+void MainWindow::on_pixel_format_currentIndexChanged(int index)
+{
+	if(index < 0) {
+		return;
+	}
+	
+	auto pixel_formats = camera->get_pixel_formats();
+	auto pixel_format = pixel_formats[index];
+	
+	auto sizes = camera->get_pixel_format_sizes(pixel_format);
+	
+	ui->format_size->clear();
+	for(auto i = 0; i < sizes.size(); i++) {
+		ui->format_size->addItem(QString::fromStdString(sizes[i]));
+	}
+	ui->format_size->setStyleSheet("combobox-popup: 0;");
+}
+
+void MainWindow::on_camera_gain_valueChanged()
+{
+	camera->analogue_gain = ui->camera_gain->value();
+}
+
+void MainWindow::on_camera_exposure_valueChanged()
+{
+	camera->exposure_time = ui->camera_exposure->value();
+}
+
+void MainWindow::on_camera_brightness_valueChanged()
+{
+	camera->brightness = ui->camera_brightness->value();
+}
+
+void MainWindow::on_camera_contrast_valueChanged()
+{
+	camera->contrast = ui->camera_contrast->value();
+}
+
+void MainWindow::on_camera_saturation_valueChanged()
+{
+	camera->saturation = ui->camera_saturation->value();
+}
+
+void MainWindow::on_camera_sharpness_valueChanged()
+{
+	camera->sharpness = ui->camera_sharpness->value();
+}
+
+void MainWindow::on_lens_position_valueChanged()
+{
+	camera->lens_position = ui->lens_position->value();
+}
 
 void MainWindow::on_configure_camera_clicked()
 {
-	auto width = ui->camera_width->value();
-	auto height = ui->camera_height->value();
-	auto format = convert_format(ui->pixel_format->currentText().toStdString());
+	auto pixel_format_index = ui->pixel_format->currentIndex();
+	auto pixel_format_size_index = ui->format_size->currentIndex();
 	
-	camera->configure_camera(width, height, format);
+	if(pixel_format_index < 0) {
+		return;
+	}
+	
+	if(pixel_format_size_index < 0) {
+		return;
+	}
+	
+	camera->configure_camera(pixel_format_index, pixel_format_size_index);
 }
 
 void MainWindow::on_start_camera_clicked()
@@ -113,7 +180,7 @@ void MainWindow::on_start_camera_clicked()
 
 void MainWindow::on_stop_camera_clicked()
 {
-	QObject::disconnect(view_idle_timer);
+	QObject::disconnect(&view_idle_timer, &QTimer::timeout, this, &MainWindow::update_view);
 	
 	camera->stop_camera();
 }
@@ -123,12 +190,17 @@ void MainWindow::capture_begin_clicked(){}
 void MainWindow::capture_cancel_clicked(){}
 
 void MainWindow::update_view() {
-	auto width = ui->camera_width->value();
-	auto height = ui->camera_height->value();
+	//auto width = ui->camera_width->value();
+	//auto height = ui->camera_height->value();
 	
+	//printf("MainWindow::update_view()\n");
+	
+	int width, height;
 	std::vector<uint8_t> buffer;
-	camera->grab_frame(buffer);
+	camera->get_image(width, height, buffer);
 	
-	ui->view->set_buffer(width, height, buffer);
+	temperature_info->setText(QString::number(camera->temperature));
+	
+	ui->view->set_buffer(width, height, 4, buffer);
 	ui->view->repaint();
 }
