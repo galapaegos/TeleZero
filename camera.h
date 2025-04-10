@@ -15,9 +15,6 @@
 #include <libcamera/libcamera.h>
 #include <libcamera/formats.h>
 
-std::string convert_format(const libcamera::PixelFormat &format);
-libcamera::PixelFormat convert_format(const std::string &format);
-
 class Camera
 {
 public:
@@ -31,14 +28,27 @@ public:
 	bool connect_camera(const std::string &camera_name);
 	bool disconnect_camera();
 	
-	bool configure_camera(const int &width, const int &height, const libcamera::PixelFormat &format);
+	bool configure_camera(const int &format_index, const int &size_index);
 	
 	bool start_camera();
 	bool stop_camera();
 	
 	bool is_connected() const { return has_camera; }
 	
-	bool get_image(std::vector<uint8_t> frame_buffer);
+	bool get_image(int &width, int &height, std::vector<uint8_t> &frame_buffer);
+	
+	std::vector<std::string> get_pixel_formats() const;
+	std::vector<std::string> get_pixel_format_sizes(const std::string &format);
+	
+	float analogue_gain;
+	float exposure_time;
+	
+	float brightness;
+	float contrast;
+	float saturation;
+	float sharpness;
+	float lens_position;
+	float temperature;
 	
 private:
 	int queue_request(libcamera::Request *request);
@@ -47,6 +57,12 @@ private:
 	
 	bool has_camera;
 	bool camera_started;
+	
+	int width;
+	int height;
+
+	std::vector<libcamera::PixelFormat> pixel_formats;
+	std::map<libcamera::PixelFormat, std::vector<libcamera::Size>> pixel_format_sizes;
 	
 	libcamera::Stream *stream;
 	
@@ -64,6 +80,8 @@ private:
 	std::mutex control_mutex;
 	std::mutex camera_stop_mutex;
 	std::mutex free_requests_mutex;
+	
+	std::vector<uint8_t> image_buffer;
 	
 	libcamera::StreamConfiguration stream_config;
 };
