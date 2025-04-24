@@ -1,8 +1,13 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
-#include "camera.h"
+#include <filesystem>
 
+#include "camera.h"
+#include "tiff.h"
+#include "util.h"
+
+#include <QFileDialog>
 #include <QMessageBox>
 
 std::vector<int> get_selected_rows(QList<QTableWidgetItem *> list)
@@ -20,7 +25,7 @@ std::vector<int> get_selected_rows(QList<QTableWidgetItem *> list)
 }
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+    : QMainWindow(parent), begin_capture(0), captured_images(0), total_images(0)
 {
 	ui = std::make_unique<Ui::MainWindow>();
     ui->setupUi(this);
@@ -51,7 +56,7 @@ MainWindow::MainWindow(QWidget *parent)
 		ui->camera_list->setItem(idx, 0, new QTableWidgetItem(QString::fromStdString(cameras[i])));
 	}
 	
-	temperature_info = new QLabel("", this);
+	temperature_info = new QLabel("Sensor Temperature: ", this);
 	temperature_info->setFrameStyle(QFrame::Panel | QFrame::Sunken);
 	
 	statusBar()->addPermanentWidget(temperature_info, 1);
@@ -71,6 +76,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
 		event->ignore();
 		return;
 	}
+	
+	QObject::disconnect(&view_idle_timer, &QTimer::timeout, this, &MainWindow::update_view);
+	
+	camera->disconnect_camera();
 }
 
 void MainWindow::on_connect_camera_clicked()
@@ -120,36 +129,32 @@ void MainWindow::on_pixel_format_currentIndexChanged(int index)
 void MainWindow::on_camera_gain_valueChanged()
 {
 	camera->analogue_gain = ui->camera_gain->value();
+	printf("Analogue Gain: %0.2f\n", camera->analogue_gain);
 }
 
 void MainWindow::on_camera_exposure_valueChanged()
 {
+	// Converting from milliseconds to microseconds;
 	camera->exposure_time = ui->camera_exposure->value();
+	printf("Exposure Time: %i\n", camera->exposure_time);
 }
 
 void MainWindow::on_camera_brightness_valueChanged()
 {
 	camera->brightness = ui->camera_brightness->value();
+	printf("Brightness: %0.2f\n", camera->brightness);
 }
 
 void MainWindow::on_camera_contrast_valueChanged()
 {
 	camera->contrast = ui->camera_contrast->value();
+	printf("Contrast: %0.2f\n", camera->contrast);
 }
 
 void MainWindow::on_camera_saturation_valueChanged()
 {
 	camera->saturation = ui->camera_saturation->value();
-}
-
-void MainWindow::on_camera_sharpness_valueChanged()
-{
-	camera->sharpness = ui->camera_sharpness->value();
-}
-
-void MainWindow::on_lens_position_valueChanged()
-{
-	camera->lens_position = ui->lens_position->value();
+	printf("Saturation: %0.2f\n", camera->saturation);
 }
 
 void MainWindow::on_configure_camera_clicked()
@@ -163,6 +168,14 @@ void MainWindow::on_configure_camera_clicked()
 	
 	if(pixel_format_size_index < 0) {
 		return;
+	}
+	
+	if(camera->channels == 3) {
+		ui->view->set_texture_type(GL_RGB8UI);
+	}
+	
+	if(camera->channels == 4) {
+		ui->view->set_texture_type(GL_RGBA8UI);
 	}
 	
 	camera->configure_camera(pixel_format_index, pixel_format_size_index);
@@ -185,9 +198,42 @@ void MainWindow::on_stop_camera_clicked()
 	camera->stop_camera();
 }
 
-void MainWindow::capture_path_clicked(){}
-void MainWindow::capture_begin_clicked(){}
-void MainWindow::capture_cancel_clicked(){}
+void MainWindow::on_capture_path_clicked()
+{
+	auto directory = QFileDialog::getExistingDirectory().toStdString();
+	
+	if(directory.compare("") == 0) {
+		return;
+	}
+	
+	ui->storage_path->setText(QString::fromStdString(directory));
+}
+
+void MainWindow::on_capture_begin_clicked()
+{
+	auto storage_path = ui->storage_path->text().toStdString();
+	auto session_name = ui->session_name->text().toStdString();
+	auto session_id = ui->session_id->text().toStdString();
+	total_images = ui->image_captures->value();
+	
+	if(session_name.compare("") == 0 || session_id.compare("") == 0) {
+		printf("Please specify session name and id.\n");
+		return;
+	}
+	
+	session_path = format("%s/%s/%s", storage_path.c_str(), session_name.c_str(), session_id.c_str());
+	
+	printf("Session_path: %s\n", session_path.c_str());
+	
+	std::filesystem::create_directories(session_path);
+	
+	begin_capture = 1;
+	captured_images = 0;
+}
+
+void MainWindow::on_capture_cancel_clicked(){
+	begin_capture = 0;
+}
 
 void MainWindow::update_view() {
 	//auto width = ui->camera_width->value();
@@ -195,12 +241,23 @@ void MainWindow::update_view() {
 	
 	//printf("MainWindow::update_view()\n");
 	
-	int width, height;
 	std::vector<uint8_t> buffer;
-	camera->get_image(width, height, buffer);
+	camera->get_image(buffer);
 	
-	temperature_info->setText(QString::number(camera->temperature));
+	if(begin_capture) {
+		if(captured_images < total_images) {
+			auto file = format("%s/image_%0.4i.tif", session_path.c_str(), captured_images);
+			write_tiff(file, camera->width, camera->height, camera->channels, buffer);
+		
+			captured_images++;
+		} else {
+			printf("capture complete\n");
+			begin_capture = 0;
+		}
+	}
 	
-	ui->view->set_buffer(width, height, 4, buffer);
+	temperature_info->setText(QString::fromStdString(format("Sensor Temperature: %fC", camera->temperature)));
+	
+	ui->view->set_buffer(camera->width, camera->height, camera->channels, buffer);
 	ui->view->repaint();
 }

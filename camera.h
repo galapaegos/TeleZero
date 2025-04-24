@@ -10,6 +10,7 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <sstream>
 #include <sys/mman.h>
 
 #include <libcamera/libcamera.h>
@@ -35,22 +36,29 @@ public:
 	
 	bool is_connected() const { return has_camera; }
 	
-	bool get_image(int &width, int &height, std::vector<uint8_t> &frame_buffer);
+	bool get_image(std::vector<uint8_t> &frame_buffer);
 	
 	std::vector<std::string> get_pixel_formats() const;
 	std::vector<std::string> get_pixel_format_sizes(const std::string &format);
 	
+	int width;
+	int height;
+	int channels;
+	
+	int lines_per_row;
+	int padding;
+	
 	float analogue_gain;
-	float exposure_time;
+	int32_t exposure_time;
 	
 	float brightness;
 	float contrast;
 	float saturation;
-	float sharpness;
 	float lens_position;
 	float temperature;
 	
 private:
+	int get_channels(const libcamera::PixelFormat &format);
 	int queue_request(libcamera::Request *request);
 	void process_request(libcamera::Request *request);
 	void request_complete(libcamera::Request *request);
@@ -58,9 +66,6 @@ private:
 	bool has_camera;
 	bool camera_started;
 	
-	int width;
-	int height;
-
 	std::vector<libcamera::PixelFormat> pixel_formats;
 	std::map<libcamera::PixelFormat, std::vector<libcamera::Size>> pixel_format_sizes;
 	
@@ -76,7 +81,9 @@ private:
 	
 	std::queue<libcamera::Request *> request_queue;
 	
-	libcamera::ControlList controls;
+	std::vector<libcamera::PixelFormat> supported_formats;
+	
+	libcamera::ControlList cam_controls;
 	std::mutex control_mutex;
 	std::mutex camera_stop_mutex;
 	std::mutex free_requests_mutex;

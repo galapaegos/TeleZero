@@ -1,14 +1,53 @@
 #include "camera.h"
 
+#include <iomanip>
+#include <math.h>
 #include <sys/ioctl.h>
 
 #include <linux/dma-buf.h>
 
 #include "tiff.h"
 
-Camera::Camera() : has_camera(false), camera_started(false), stream(nullptr), camera(nullptr), camera_manager(nullptr), exposure_time(12000),
-	analogue_gain(0), brightness(0.f), contrast(1.f), saturation(1.f), sharpness(0.f), lens_position(0.f), temperature(0.f)
+static const std::map<int, std::string> cfa_map =
 {
+	{ libcamera::properties::draft::ColorFilterArrangementEnum::RGGB, "RGGB" },
+	{ libcamera::properties::draft::ColorFilterArrangementEnum::GRBG, "GRBG" },
+	{ libcamera::properties::draft::ColorFilterArrangementEnum::GBRG, "GBRG" },
+	{ libcamera::properties::draft::ColorFilterArrangementEnum::RGB, "RGB" },
+	{ libcamera::properties::draft::ColorFilterArrangementEnum::MONO, "MONO" },
+};
+
+static const std::map<libcamera::PixelFormat, unsigned int> bayer_formats =
+{
+	{ libcamera::formats::SRGGB10_CSI2P, 10 },
+	{ libcamera::formats::SGRBG10_CSI2P, 10 },
+	{ libcamera::formats::SBGGR10_CSI2P, 10 },
+	{ libcamera::formats::R10_CSI2P,     10 },
+	{ libcamera::formats::SGBRG10_CSI2P, 10 },
+	{ libcamera::formats::SRGGB12_CSI2P, 12 },
+	{ libcamera::formats::SGRBG12_CSI2P, 12 },
+	{ libcamera::formats::SBGGR12_CSI2P, 12 },
+	{ libcamera::formats::SGBRG12_CSI2P, 12 },
+	{ libcamera::formats::SRGGB14_CSI2P, 14 },
+	{ libcamera::formats::SGRBG14_CSI2P, 14 },
+	{ libcamera::formats::SBGGR14_CSI2P, 14 },
+	{ libcamera::formats::SGBRG14_CSI2P, 14 },
+	{ libcamera::formats::SRGGB16,       16 },
+	{ libcamera::formats::SGRBG16,       16 },
+	{ libcamera::formats::SBGGR16,       16 },
+	{ libcamera::formats::SGBRG16,       16 },
+};
+
+Camera::Camera() : has_camera(false), camera_started(false), stream(nullptr), camera(nullptr), camera_manager(nullptr), exposure_time(12000),
+	camera_mode(0), analogue_gain(1), brightness(0.f), contrast(1.f), saturation(1.f), lens_position(0.f), temperature(0.f), lines_per_row(0), padding(0)
+{
+	supported_formats.push_back(libcamera::formats::XRGB8888);
+	supported_formats.push_back(libcamera::formats::XBGR8888);
+	supported_formats.push_back(libcamera::formats::RGBA8888);
+	supported_formats.push_back(libcamera::formats::BGRA8888);
+	
+	supported_formats.push_back(libcamera::formats::BGR888);
+	supported_formats.push_back(libcamera::formats::RGB888);
 }
 
 Camera::~Camera()
@@ -61,16 +100,194 @@ bool Camera::connect_camera(const std::string &camera_name)
 	
 	has_camera = true;
 	
+	//10 - [ 20749, 20750, 20737, 20738, 20739 ]
+	//8 - (0, 0)/0x0
+	//7 - [ (8, 16)/4056x3040 ]
+	//5 - 4056x3040
+	//2 - 180
+	//1 - 2
+	//10001 - 0
+	//4 - 1550x1550
+	//3 - imx477
+	const libcamera::ControlList &properties = camera->properties();
+	
+	auto area = properties.get(libcamera::properties::PixelArraySize).value();
+	auto sensor_properties = properties.get(libcamera::properties::Model).value();
+	
+	//config = camera->generateConfiguration({libcamera::StreamRole::Raw});
 	config = camera->generateConfiguration({libcamera::StreamRole::StillCapture});
 	//config = camera->generateConfiguration({libcamera::StreamRole::Viewfinder});
 	
-	auto const &formats = config->at(0).formats();
-	for(const auto &format : formats.pixelformats()) {
+	auto &stream_config = config->at(0);
+	
+	if(config->validate() == libcamera::CameraConfiguration::Invalid) {
+		printf("Invalid camera configuration\n");
+		return false;
+	}
+	
+	/*
+	{
+		unsigned int idx = 0;
+		
+		std::stringstream sensor_props;
+		sensor_props << idx++ << " : " << *camera->properties().get(libcamera::properties::Model) << " [";
+
+		auto area = properties.get(libcamera::properties::PixelArrayActiveAreas);
+		if (area)
+			sensor_props << (*area)[0].size().toString() << " ";
+
+		const libcamera::StreamFormats &formats = config->at(0).formats();
+
+		unsigned int bits = 0;
+		for (const auto &pix : formats.pixelformats())
+		{
+			const auto &b = bayer_formats.find(pix);
+			if (b != bayer_formats.end() && b->second > bits)
+				bits = b->second;
+		}
+		if (bits)
+			sensor_props << bits << "-bit ";
+
+		auto cfa = properties.get(libcamera::properties::draft::ColorFilterArrangement);
+		if (cfa && cfa_map.count(*cfa))
+			sensor_props << cfa_map.at(*cfa) << " ";
+
+		sensor_props.seekp(-1, sensor_props.cur);
+		sensor_props << "] (" << camera->id() << ")";
+		std::cout << sensor_props.str() << std::endl;
+
+		libcamera::ControlInfoMap control_map;
+		libcamera::Size max_size;
+		libcamera::PixelFormat max_fmt;
+
+		std::cout << "    Modes: ";
+		unsigned int i = 0;
+		for (const auto &pix : formats.pixelformats())
+		{
+			if (i++) std::cout << "           ";
+			std::string mode("'" + pix.toString() + "' : ");
+			std::cout << mode;
+			unsigned int num = formats.sizes(pix).size();
+			for (const auto &size : formats.sizes(pix))
+			{
+				SensorMode sensor_mode(size, pix, 0);
+				std::cout << size.toString() << " ";
+
+				config->at(0).size = size;
+				config->at(0).pixelFormat = pix;
+				config->sensorConfig = libcamera::SensorConfiguration();
+				config->sensorConfig->outputSize = size;
+				config->sensorConfig->bitDepth = sensor_mode.depth();
+				config->validate();
+				camera->configure(config.get());
+
+				if (size > max_size)
+				{
+					control_map = camera->controls();
+					max_fmt = pix;
+					max_size = size;
+				}
+
+				auto fd_ctrl = camera->controls().find(&libcamera::controls::FrameDurationLimits);
+				//auto crop_ctrl = camera->controls().at(&libcamera::controls::ScalerCrop).max().get<Rectangle>();
+				double fps = fd_ctrl == camera->controls().end() ? NAN : (1e6 / fd_ctrl->second.min().get<int64_t>());
+				std::cout << std::fixed << std::setprecision(2) << "["
+						  << fps << " fps - " << crop_ctrl.toString() << " crop" << "]";
+				if (--num)
+				{
+					std::cout << std::endl;
+					for (std::size_t s = 0; s < mode.length() + 11; std::cout << " ", s++);
+				}
+			}
+			std::cout << std::endl;
+		}
+		
+		std::stringstream ss;
+		ss << "\n    Available controls for " << max_size.toString() << " " << max_fmt.toString() << " mode:\n    ";
+		std::cout << ss.str();
+		for (std::size_t s = 0; s < ss.str().length() - 10; std::cout << "-", s++);
+			std::cout << std::endl;
+
+			std::vector<std::string> ctrls;
+			for (auto const &[id, info] : control_map)
+				ctrls.emplace_back(id->name() + " : " + info.toString());
+			std::sort(ctrls.begin(), ctrls.end(), [](auto const &l, auto const &r) { return l < r; });
+			for (auto const &c : ctrls)
+				std::cout << "    " << c << std::endl;
+	}
+
+	std::cout << std::endl;
+	*/
+	
+	pixel_formats.clear();
+	pixel_format_sizes.clear();
+	
+	//for(const auto &format : formats.pixelformats()) {
+	for(auto &format : supported_formats) {
+		//bool found = false;
+		//for(auto i = 0; i < supported_formats.size(); i++) {
+		//	if(supported_formats[i] == format) {
+		//		found = true;
+		//	}
+		//}
+		
+		//if(found == false) {
+		//	continue;
+		//}
+		
+		//printf("supported: %s\n", format.toString().c_str());
+		
 		pixel_formats.push_back(format);
 		//printf("format: %s\n", format.toString().c_str());
 		
-		pixel_format_sizes[format] = formats.sizes(format);
+		pixel_format_sizes[format].push_back(area);
+		pixel_format_sizes[format].push_back(area / 2);
+		pixel_format_sizes[format].push_back(area / 4);
+		pixel_format_sizes[format].push_back(area / 8);
+		
+		//auto sizes = formats.sizes(format);
+		//for (auto &s : sizes) {
+			//SensorMode mode(s, format, 0);
+			
+			//if((s.width == area.width && s.height == area.height) || (s.width == area.width/2 && s.height == area.height/2) ||
+			//	 (s.width == area.width/4 && s.height == area.height/4)) {
+			//		printf("    size: [%i,%i] depth:%i\n", s.width, s.height, mode.depth());
+			//pixel_format_sizes[format].push_back(s);
+			//}
+		//}
 	}
+	
+	// 15 AwbEnable libcamera - [false..true]
+	// 18 ColourGains libcamera - [0.000000..32.000000]
+	// 16 AwbMode libcamera - [0..7]
+	// 19 ColourTemperature libcamera - [100..100000]
+	// 20 Saturation libcamera - [0.000000..32.000000]
+	// 20007 CnnEnableInputTensor rpi - [false..true]
+	// 28 FrameDurationLimits libcamera - [33333..120000]
+	// 25 ScalerCrop libcamera - [(0, 0)/0x0..(65535, 65535)/65535x65535]
+	// 20001 StatsOutputEnable rpi - [false..true]
+	// 10002 NoiseReductionMode draft - [0..4]
+	// 22 Sharpness libcamera - [0.000000..16.000000]
+	// 12 Brightness libcamera - [-1.000000..1.000000]
+	// 4 AeConstraintMode libcamera - [0..3]
+	// 20011 SyncMode rpi - [0..2]
+	// 5 AeExposureMode libcamera - [0..3]
+	// 7 ExposureTime libcamera - [1..66666]
+	// 9 AeFlickerMode libcamera - [0..1]
+	// 6 ExposureValue libcamera - [-8.000000..8.000000]
+	// 20014 SyncFrames rpi - [1..1000000]
+	// 1 AeEnable libcamera - [false..true]
+	// 8 AnalogueGain libcamera - [1.000000..16.000000]
+	// 10 AeFlickerPeriod libcamera - [100..1000000]
+	// 13 Contrast libcamera - [0.000000..32.000000]
+	// 3 AeMeteringMode libcamera - [0..3]
+	// 41 HdrMode libcamera - [0..4]
+	//const libcamera::ControlInfoMap &control_info = camera->controls();
+	//for(auto itr = control_info.begin(); itr != control_info.end(); itr++) {
+	//	auto control_id = itr->first;
+	//	auto control = itr->second;
+	//	//printf("%i %s %s - %s\n", control_id->id(), control_id->name().c_str(), control_id->vendor().c_str(), control.toString().c_str());
+	//}
 	
 	return true;
 }
@@ -133,7 +350,8 @@ bool Camera::configure_camera(const int &format_index, const int &size_index)
 	
 	width = pixel_format_size.width;
 	height = pixel_format_size.height;
-	printf("Configured to use: %i x %i\n", width, height);
+	channels = get_channels(pixel_format);
+	printf("Configured to use: %s  %i x %i [%i]\n", pixel_format.toString().c_str(), width, height, channels);
 	
 	config->at(0).size = pixel_format_size;
 	config->at(0).pixelFormat = pixel_format;
@@ -143,6 +361,15 @@ bool Camera::configure_camera(const int &format_index, const int &size_index)
 		printf("Invalid camera configuration\n");
 		return false;
 	}
+	
+	printf("frameSize: %i [%i] [%i] %i\n", config->at(0).frameSize, width*height*3, width*height*4, config->at(0).stride);
+	
+	// computing the aligned dimensions:
+	int stride = config->at(0).stride;
+	lines_per_row = stride / width;
+	padding = stride - lines_per_row * width;
+	
+	printf("offsets %i %i\n", lines_per_row, padding);
 	
 	printf("configure camera\n");
 	auto ret = camera->configure(config.get());
@@ -205,20 +432,25 @@ bool Camera::start_camera()
 	camera->requestCompleted.connect(this, &Camera::request_complete);
 	
 	// Initial startup values (https://github.com/libcamera-org/libcamera/blob/master/src/libcamera/control_ids_core.yaml)
-	controls.set(libcamera::controls::AwbEnable, false);
-	controls.set(libcamera::controls::AeEnable, false);
-	controls.set(libcamera::controls::AfMode, 0);
+	cam_controls.set(libcamera::controls::AeEnable, false);
+	//cam_controls.set(libcamera::controls::AeExposureMode, 2);
+	cam_controls.set(libcamera::controls::AwbEnable, false);
+	//cam_controls.set(libcamera::controls::AfMode, 0);
 	
-	controls.set(libcamera::controls::AnalogueGain, analogue_gain);
-	controls.set(libcamera::controls::ExposureTime, exposure_time);
-	controls.set(libcamera::controls::Brightness, brightness);
-	controls.set(libcamera::controls::Contrast, contrast);
-	controls.set(libcamera::controls::Saturation, saturation);
-	controls.set(libcamera::controls::Sharpness, sharpness);
-	//controls.set(libcamera::controls::LensPosition, lens_position);
+	cam_controls.set(libcamera::controls::AnalogueGain, analogue_gain);
+	cam_controls.set(libcamera::controls::ExposureTime, exposure_time);
+	cam_controls.set(libcamera::controls::Brightness, brightness);
+	cam_controls.set(libcamera::controls::Contrast, contrast);
+	cam_controls.set(libcamera::controls::Saturation, saturation);
+	//cam_controls.set(libcamera::controls::Sharpness, sharpness);
+	//cam_controls.set(libcamera::controls::LensPosition, 0);
 	
-	printf("camera->start(&controls)\n");	
-	auto ret = camera->start(&controls);
+	printf("Initial controls:   a:%0.2f  e:%microseconds b:%0.2f c:%0.2f s:%0.2f\n", analogue_gain, exposure_time, brightness, contrast, saturation);
+	
+	//cam_controls.set(libcamera::controls::draft::NoiseReductionMode, libcamera::controls::draft::NoiseReductionModeOff);
+	
+	printf("camera->start(&cam_controls)\n");	
+	auto ret = camera->start(&cam_controls);
 	if(ret != 0) {
 		printf("Failed to start capturing\n");
 		return false;
@@ -262,21 +494,37 @@ bool Camera::stop_camera()
 	mapped_buffers.clear();
 	requests.clear();
 	allocator.reset();
-	controls.clear();
+	cam_controls.clear();
 	
 	return true;
 }
 
-bool Camera::get_image(int &w, int &h, std::vector<uint8_t> &frame_buffer)
+bool Camera::get_image(std::vector<uint8_t> &frame_buffer)
 {
 	//printf("Camera::get_image()\n");
 	
-	std::lock_guard<std::mutex> lock(free_requests_mutex);
-	frame_buffer.resize(image_buffer.size());
-	memcpy(frame_buffer.data(), image_buffer.data(), image_buffer.size());
+	std::vector<uint8_t> aligned_buffer;
+	{
+		std::lock_guard<std::mutex> lock(free_requests_mutex);
+		aligned_buffer.resize(image_buffer.size());
+		memcpy(aligned_buffer.data(), image_buffer.data(), image_buffer.size());
+	}
 	
-	w = width;
-	h = height;
+	frame_buffer.resize(width * height * channels);
+	
+	int src_idx = 0;
+	int dst_idx = 0;
+	uint8_t *src = aligned_buffer.data();
+	uint8_t *dst = frame_buffer.data();
+	while(src_idx < aligned_buffer.size()) {
+		for(auto i = 0; i < lines_per_row*width; i++) {
+			dst[dst_idx + i] = src[src_idx + i];
+		}
+		dst_idx += lines_per_row * width;
+		src_idx += lines_per_row * width + padding;
+	}
+	
+	//printf("idx: %i %i lpr:%i pad:%i\n", src_idx, dst_idx, lines_per_row, padding);
 	
 	return true;
 }
@@ -306,12 +554,32 @@ std::vector<std::string> Camera::get_pixel_format_sizes(const std::string &forma
 	return sizes;
 }
 
+int Camera::get_channels(const libcamera::PixelFormat &format) {
+	switch(format) {
+		case libcamera::formats::XRGB8888:
+		case libcamera::formats::XBGR8888:
+		case libcamera::formats::RGBA8888:
+		case libcamera::formats::BGRA8888:
+		{
+			return 4;
+		}break;
+	
+		case libcamera::formats::BGR888:
+		case libcamera::formats::RGB888:
+		{
+			return 3;
+		}
+	}
+	
+	return -1;
+}
+
 int Camera::queue_request(libcamera::Request *request)
 {
 	std::lock_guard<std::mutex> stop_lock(camera_stop_mutex);
 	{
 		std::lock_guard<std::mutex> lock(control_mutex);
-		request->controls() = std::move(controls);
+		request->controls() = std::move(cam_controls);
 	}
 	
 	printf("camera->queueRequest(request)\n");	
@@ -321,6 +589,11 @@ int Camera::queue_request(libcamera::Request *request)
 void Camera::process_request(libcamera::Request *request)
 {
 	std::lock_guard<std::mutex> lock(free_requests_mutex);
+	
+	if(request->status() == libcamera::Request::Status::RequestCancelled) {
+		printf("status: Cancelled\n");
+		return;
+	}
 	
 	const libcamera::Request::BufferMap &buffers = request->buffers();
 	for (auto bufferPair : buffers) {
@@ -341,23 +614,54 @@ void Camera::process_request(libcamera::Request *request)
 		if(munmap(addr, plane.length) != 0) {
 			printf("Unable to unmap plane\n");
 		}
+		
+		printf("sequence: %i\n", request->sequence());
+		auto &read_controls = request->metadata();
+		//for(auto itr = read_controls.begin(); itr != read_controls.end(); itr++) {
+		//	printf("control: %i, %s\n", itr->first, itr->second.toString().c_str());
+		//}
+		if(read_controls.contains(8)) {
+			printf("Used controls:   a:%0.2f\n", read_controls.get(8).get<float>());
+		}
+		if(read_controls.contains(7)) {
+			printf("                 e:%i microseconds\n", read_controls.get(7).get<int>());
+		}
+		if(read_controls.contains(12)) {
+			printf("                 b:%0.2f\n", read_controls.get(12).get<float>());
+		}
+		if(read_controls.contains(13)) {
+			printf("                 c:%0.2f\n", read_controls.get(13).get<float>());
+		}
+		if(read_controls.contains(20)) {
+			printf("                 s:%0.2f\n", read_controls.get(20).get<float>());
+		}
+		
+		if(read_controls.contains(29)) {
+			temperature = read_controls.get(29).get<float>();
+		}
 	}
 	
 	request->reuse(libcamera::Request::ReuseBuffers);
 	
-	// Updating our request values:
-	libcamera::ControlList &controls = request->controls();
-	controls.set(libcamera::controls::AnalogueGain, analogue_gain);
-	controls.set(libcamera::controls::ExposureTime, exposure_time);
-	controls.set(libcamera::controls::Brightness, brightness);
-	controls.set(libcamera::controls::Contrast, contrast);
-	controls.set(libcamera::controls::Saturation, saturation);
-	controls.set(libcamera::controls::Sharpness, sharpness);
-	//controls.set(libcamera::controls::LensPosition, lens_position);
+	// Updating our request values, these are applied in queue_request
+	//libcamera::ControlList &controls = request->controls();
+	cam_controls.set(libcamera::controls::AeEnable, false);
+	//cam_controls.set(libcamera::controls::AeExposureMode, 2);
+	cam_controls.set(libcamera::controls::AwbEnable, false);
+	//cam_controls.set(libcamera::controls::AfMode, 0);
 	
-	//temperature = controls.get(libcamera::controls::SensorTemperature).value();
+	cam_controls.set(libcamera::controls::AnalogueGain, analogue_gain);
+	cam_controls.set(libcamera::controls::ExposureTime, exposure_time);
+	cam_controls.set(libcamera::controls::Brightness, brightness);
+	cam_controls.set(libcamera::controls::Contrast, contrast);
+	cam_controls.set(libcamera::controls::Saturation, saturation);
+	//cam_controls.set(libcamera::controls::Sharpness, sharpness);
+	//cam_controls.set(libcamera::controls::LensPosition, lens_position);
 	
-	camera->queueRequest(request);
+	printf("Updated controls:   a:%0.2f  e:%imicroseconds b:%0.2f c:%0.2f s:%0.2f\n", analogue_gain, exposure_time, brightness, contrast, saturation);
+	
+	queue_request(request);
+	//camera->queueRequest(request);
 	
 	//printf("Request completed %s\n", request->toString().c_str());
 }

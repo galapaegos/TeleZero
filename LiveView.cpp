@@ -12,6 +12,12 @@ LiveView::~LiveView()
 {
 }
 
+void LiveView::set_texture_type(const GLenum &format){
+	live_texture->destroy();
+	
+	live_texture->create(GL_TEXTURE_2D, format, false);
+}
+
 void LiveView::set_buffer(const int &width, const int &height, const int &channels, std::vector<uint8_t> buffer)
 {
 	if(width * height * channels != buffer.size()) {
@@ -24,6 +30,7 @@ void LiveView::set_buffer(const int &width, const int &height, const int &channe
 	
 	texture_width = width;
 	texture_height = height;
+	texture_channel = channels;
 	
 	update_texture = true;
 }
@@ -35,6 +42,7 @@ void LiveView::set_buffer(const int &width, const int &height, const int &channe
 	
 	texture_width = width;
 	texture_height = height;
+	texture_channel = channels;
 	
 	update_texture = true;
 }
@@ -94,7 +102,15 @@ void LiveView::paintGL()
 	check_error();
 	
 	if(update_texture) {
-		live_texture->upload(texture_buffer.data(), texture_width, texture_height, GL_RGBA_INTEGER);
+		switch(texture_channel) {
+			case 3: {
+				live_texture->upload(texture_buffer.data(), texture_width, texture_height, GL_RGB_INTEGER);
+			}break;
+			
+			case 4: {
+				live_texture->upload(texture_buffer.data(), texture_width, texture_height, GL_RGBA_INTEGER);
+			}
+		}
 		update_texture = false;
 		check_error();
 	}

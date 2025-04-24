@@ -37,22 +37,24 @@ private Q_SLOTS:
 	void on_camera_brightness_valueChanged();
 	void on_camera_contrast_valueChanged();
 	void on_camera_saturation_valueChanged();
-	void on_camera_sharpness_valueChanged();
-	void on_lens_position_valueChanged();
 	
 	void on_configure_camera_clicked();
 	
 	void on_start_camera_clicked();
 	void on_stop_camera_clicked();
 	
-	void capture_path_clicked();
-	void capture_begin_clicked();
-	void capture_cancel_clicked();
+	void on_capture_path_clicked();
+	void on_capture_begin_clicked();
+	void on_capture_cancel_clicked();
 
 private:
     std::unique_ptr<Ui::MainWindow> ui;
     std::unique_ptr<Camera> camera;
 	
+	int begin_capture;
+	int captured_images;
+	int total_images;
+	std::string session_path;
 	QLabel *temperature_info;
 	
 	QTimer view_idle_timer;

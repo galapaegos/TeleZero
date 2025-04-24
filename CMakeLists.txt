@@ -28,6 +28,8 @@ set(PROJECT_SOURCES
 		camera.h
 		tiff.cpp
 		tiff.h
+		util.cpp
+		util.h
 		glcheck.cpp
 		glcheck.h
 		LiveView.cpp

@@ -18,6 +18,8 @@ public:
     explicit LiveView(QWidget *parent = nullptr);
     ~LiveView();
 	
+	void set_texture_type(const GLenum &format);
+	
 	void set_buffer(const int &width, const int &height, const int &channels, std::vector<uint8_t> buffer);
 	void set_buffer(const int &width, const int &height, const int &channels, const uint8_t *buffer);
 
@@ -43,6 +45,7 @@ private:
 	bool update_texture;
 	int texture_width;
 	int texture_height;
+	int texture_channel;
 	std::vector<uint8_t> texture_buffer;
 	
 	std::shared_ptr<Program> program;
