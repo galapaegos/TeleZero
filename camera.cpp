@@ -39,14 +39,14 @@ static const std::map<libcamera::PixelFormat, unsigned int> bayer_formats =
 };
 
 Camera::Camera() : has_camera(false), camera_started(false), stream(nullptr), camera(nullptr), camera_manager(nullptr), exposure_time(12000),
-	camera_mode(0), analogue_gain(1), brightness(0.f), contrast(1.f), saturation(1.f), lens_position(0.f), temperature(0.f), lines_per_row(0), padding(0)
+	analogue_gain(1), brightness(0.f), contrast(1.f), saturation(1.f), lens_position(0.f), temperature(0.f), lines_per_row(0), padding(0)
 {
 	supported_formats.push_back(libcamera::formats::XRGB8888);
-	supported_formats.push_back(libcamera::formats::XBGR8888);
+	//supported_formats.push_back(libcamera::formats::XBGR8888);
 	supported_formats.push_back(libcamera::formats::RGBA8888);
-	supported_formats.push_back(libcamera::formats::BGRA8888);
+	//supported_formats.push_back(libcamera::formats::BGRA8888);
 	
-	supported_formats.push_back(libcamera::formats::BGR888);
+	//supported_formats.push_back(libcamera::formats::BGR888);
 	supported_formats.push_back(libcamera::formats::RGB888);
 }
 
@@ -124,139 +124,21 @@ bool Camera::connect_camera(const std::string &camera_name)
 		printf("Invalid camera configuration\n");
 		return false;
 	}
-	
-	/*
-	{
-		unsigned int idx = 0;
-		
-		std::stringstream sensor_props;
-		sensor_props << idx++ << " : " << *camera->properties().get(libcamera::properties::Model) << " [";
 
-		auto area = properties.get(libcamera::properties::PixelArrayActiveAreas);
-		if (area)
-			sensor_props << (*area)[0].size().toString() << " ";
-
-		const libcamera::StreamFormats &formats = config->at(0).formats();
-
-		unsigned int bits = 0;
-		for (const auto &pix : formats.pixelformats())
-		{
-			const auto &b = bayer_formats.find(pix);
-			if (b != bayer_formats.end() && b->second > bits)
-				bits = b->second;
-		}
-		if (bits)
-			sensor_props << bits << "-bit ";
-
-		auto cfa = properties.get(libcamera::properties::draft::ColorFilterArrangement);
-		if (cfa && cfa_map.count(*cfa))
-			sensor_props << cfa_map.at(*cfa) << " ";
-
-		sensor_props.seekp(-1, sensor_props.cur);
-		sensor_props << "] (" << camera->id() << ")";
-		std::cout << sensor_props.str() << std::endl;
-
-		libcamera::ControlInfoMap control_map;
-		libcamera::Size max_size;
-		libcamera::PixelFormat max_fmt;
-
-		std::cout << "    Modes: ";
-		unsigned int i = 0;
-		for (const auto &pix : formats.pixelformats())
-		{
-			if (i++) std::cout << "           ";
-			std::string mode("'" + pix.toString() + "' : ");
-			std::cout << mode;
-			unsigned int num = formats.sizes(pix).size();
-			for (const auto &size : formats.sizes(pix))
-			{
-				SensorMode sensor_mode(size, pix, 0);
-				std::cout << size.toString() << " ";
-
-				config->at(0).size = size;
-				config->at(0).pixelFormat = pix;
-				config->sensorConfig = libcamera::SensorConfiguration();
-				config->sensorConfig->outputSize = size;
-				config->sensorConfig->bitDepth = sensor_mode.depth();
-				config->validate();
-				camera->configure(config.get());
-
-				if (size > max_size)
-				{
-					control_map = camera->controls();
-					max_fmt = pix;
-					max_size = size;
-				}
-
-				auto fd_ctrl = camera->controls().find(&libcamera::controls::FrameDurationLimits);
-				//auto crop_ctrl = camera->controls().at(&libcamera::controls::ScalerCrop).max().get<Rectangle>();
-				double fps = fd_ctrl == camera->controls().end() ? NAN : (1e6 / fd_ctrl->second.min().get<int64_t>());
-				std::cout << std::fixed << std::setprecision(2) << "["
-						  << fps << " fps - " << crop_ctrl.toString() << " crop" << "]";
-				if (--num)
-				{
-					std::cout << std::endl;
-					for (std::size_t s = 0; s < mode.length() + 11; std::cout << " ", s++);
-				}
-			}
-			std::cout << std::endl;
-		}
-		
-		std::stringstream ss;
-		ss << "\n    Available controls for " << max_size.toString() << " " << max_fmt.toString() << " mode:\n    ";
-		std::cout << ss.str();
-		for (std::size_t s = 0; s < ss.str().length() - 10; std::cout << "-", s++);
-			std::cout << std::endl;
-
-			std::vector<std::string> ctrls;
-			for (auto const &[id, info] : control_map)
-				ctrls.emplace_back(id->name() + " : " + info.toString());
-			std::sort(ctrls.begin(), ctrls.end(), [](auto const &l, auto const &r) { return l < r; });
-			for (auto const &c : ctrls)
-				std::cout << "    " << c << std::endl;
-	}
-
-	std::cout << std::endl;
-	*/
-	
 	pixel_formats.clear();
 	pixel_format_sizes.clear();
 	
 	//for(const auto &format : formats.pixelformats()) {
 	for(auto &format : supported_formats) {
-		//bool found = false;
-		//for(auto i = 0; i < supported_formats.size(); i++) {
-		//	if(supported_formats[i] == format) {
-		//		found = true;
-		//	}
-		//}
-		
-		//if(found == false) {
-		//	continue;
-		//}
-		
-		//printf("supported: %s\n", format.toString().c_str());
-		
 		pixel_formats.push_back(format);
-		//printf("format: %s\n", format.toString().c_str());
 		
 		pixel_format_sizes[format].push_back(area);
 		pixel_format_sizes[format].push_back(area / 2);
 		pixel_format_sizes[format].push_back(area / 4);
 		pixel_format_sizes[format].push_back(area / 8);
-		
-		//auto sizes = formats.sizes(format);
-		//for (auto &s : sizes) {
-			//SensorMode mode(s, format, 0);
-			
-			//if((s.width == area.width && s.height == area.height) || (s.width == area.width/2 && s.height == area.height/2) ||
-			//	 (s.width == area.width/4 && s.height == area.height/4)) {
-			//		printf("    size: [%i,%i] depth:%i\n", s.width, s.height, mode.depth());
-			//pixel_format_sizes[format].push_back(s);
-			//}
-		//}
 	}
 	
+	// Raspberry pi zero 2 w
 	// 15 AwbEnable libcamera - [false..true]
 	// 18 ColourGains libcamera - [0.000000..32.000000]
 	// 16 AwbMode libcamera - [0..7]
@@ -282,12 +164,42 @@ bool Camera::connect_camera(const std::string &camera_name)
 	// 13 Contrast libcamera - [0.000000..32.000000]
 	// 3 AeMeteringMode libcamera - [0..3]
 	// 41 HdrMode libcamera - [0..4]
-	//const libcamera::ControlInfoMap &control_info = camera->controls();
-	//for(auto itr = control_info.begin(); itr != control_info.end(); itr++) {
-	//	auto control_id = itr->first;
-	//	auto control = itr->second;
-	//	//printf("%i %s %s - %s\n", control_id->id(), control_id->name().c_str(), control_id->vendor().c_str(), control.toString().c_str());
-	//}
+	
+	// Raspberry pi 5
+	// 17 AwbEnable - [false..true]
+	// 20 ColourGains - [0.000000..32.000000]
+	// 18 AwbMode - [0..7]
+	// 21 ColourTemperature - [100..100000]
+	// 22 Saturation - [0.000000..32.000000]
+	// 20003 ScalerCrops - [(0, 0)/0x0..(65535, 65535)/65535x65535]
+	// 20007 CnnEnableInputTensor - [false..true]
+	// 30 FrameDurationLimits - [33333..120000]
+	// 27 ScalerCrop - [(0, 0)/0x0..(65535, 65535)/65535x65535]
+	// 10002 NoiseReductionMode - [0..4]
+	// 24 Sharpness - [0.000000..16.000000]
+	// 1 AeEnable - [false..true]
+	// 6 ExposureValue - [-8.000000..8.000000]
+	// 20011 SyncMode - [0..2]
+	// 11 AeFlickerMode - [0..1]
+	// 7 ExposureTime - [1..66666]
+	// 20014 SyncFrames - [1..1000000]
+	// 14 Brightness - [-1.000000..1.000000]
+	// 20001 StatsOutputEnable - [false..true]
+	// 9 AnalogueGain - [1.000000..16.000000]
+	// 10 AnalogueGainMode - [0..1]
+	// 12 AeFlickerPeriod - [100..1000000]
+	// 3 AeMeteringMode - [0..3]
+	// 43 HdrMode - [0..4]
+	// 8 ExposureTimeMode - [0..1]
+	// 4 AeConstraintMode - [0..3]
+	// 15 Contrast - [0.000000..32.000000]
+	// 5 AeExposureMode - [0..3]
+	const libcamera::ControlInfoMap &control_info = camera->controls();
+	for(auto itr = control_info.begin(); itr != control_info.end(); itr++) {
+		auto control_id = itr->first;
+		auto control = itr->second;
+		printf("%i %s - %s\n", control_id->id(), control_id->name().c_str(), control.toString().c_str());
+	}
 	
 	return true;
 }
@@ -447,7 +359,7 @@ bool Camera::start_camera()
 	
 	printf("Initial controls:   a:%0.2f  e:%microseconds b:%0.2f c:%0.2f s:%0.2f\n", analogue_gain, exposure_time, brightness, contrast, saturation);
 	
-	//cam_controls.set(libcamera::controls::draft::NoiseReductionMode, libcamera::controls::draft::NoiseReductionModeOff);
+	cam_controls.set(libcamera::controls::draft::NoiseReductionMode, libcamera::controls::draft::NoiseReductionModeOff);
 	
 	printf("camera->start(&cam_controls)\n");	
 	auto ret = camera->start(&cam_controls);
@@ -462,6 +374,8 @@ bool Camera::start_camera()
 	}
 	
 	camera_started = true;
+	
+	printf("Camera started\n");
 	
 	return true;
 }
@@ -483,6 +397,7 @@ bool Camera::stop_camera()
 		camera->requestCompleted.disconnect(this, &Camera::request_complete);
 	}
 	while(!request_queue.empty()) {
+		printf("emptying queue\n");
 		request_queue.pop();
 	}
 	
@@ -495,6 +410,8 @@ bool Camera::stop_camera()
 	requests.clear();
 	allocator.reset();
 	cam_controls.clear();
+	
+	printf("Camera stopped\n");
 	
 	return true;
 }
@@ -582,7 +499,7 @@ int Camera::queue_request(libcamera::Request *request)
 		request->controls() = std::move(cam_controls);
 	}
 	
-	printf("camera->queueRequest(request)\n");	
+	// printf("camera->queueRequest(request)\n");	
 	return camera->queueRequest(request);
 }
 
@@ -615,29 +532,31 @@ void Camera::process_request(libcamera::Request *request)
 			printf("Unable to unmap plane\n");
 		}
 		
-		printf("sequence: %i\n", request->sequence());
+		sequence = request->sequence();
+		//printf("sequence: %i\n", request->sequence());
 		auto &read_controls = request->metadata();
 		//for(auto itr = read_controls.begin(); itr != read_controls.end(); itr++) {
 		//	printf("control: %i, %s\n", itr->first, itr->second.toString().c_str());
 		//}
-		if(read_controls.contains(8)) {
-			printf("Used controls:   a:%0.2f\n", read_controls.get(8).get<float>());
-		}
-		if(read_controls.contains(7)) {
-			printf("                 e:%i microseconds\n", read_controls.get(7).get<int>());
-		}
-		if(read_controls.contains(12)) {
-			printf("                 b:%0.2f\n", read_controls.get(12).get<float>());
-		}
-		if(read_controls.contains(13)) {
-			printf("                 c:%0.2f\n", read_controls.get(13).get<float>());
-		}
-		if(read_controls.contains(20)) {
-			printf("                 s:%0.2f\n", read_controls.get(20).get<float>());
-		}
+		//if(read_controls.contains(8)) {
+		//	printf("Used controls:   a:%0.2f\n", read_controls.get(8).get<float>());
+		//}
+		//if(read_controls.contains(7)) {
+		//	printf("                 e:%i microseconds\n", read_controls.get(7).get<int>());
+		//}
+		//if(read_controls.contains(12)) {
+		//	printf("                 b:%0.2f\n", read_controls.get(12).get<float>());
+		//}
+		//if(read_controls.contains(13)) {
+		//	printf("                 c:%0.2f\n", read_controls.get(13).get<float>());
+		//}
+		//if(read_controls.contains(20)) {
+		//	printf("                 s:%0.2f\n", read_controls.get(20).get<float>());
+		//}
 		
 		if(read_controls.contains(29)) {
-			temperature = read_controls.get(29).get<float>();
+			//temperature = read_controls.get(32).get<float>();
+			temperature = read_controls.get(libcamera::controls::SENSOR_TEMPERATURE).get<float>();
 		}
 	}
 	
@@ -645,6 +564,7 @@ void Camera::process_request(libcamera::Request *request)
 	
 	// Updating our request values, these are applied in queue_request
 	//libcamera::ControlList &controls = request->controls();
+	
 	cam_controls.set(libcamera::controls::AeEnable, false);
 	//cam_controls.set(libcamera::controls::AeExposureMode, 2);
 	cam_controls.set(libcamera::controls::AwbEnable, false);
@@ -658,7 +578,7 @@ void Camera::process_request(libcamera::Request *request)
 	//cam_controls.set(libcamera::controls::Sharpness, sharpness);
 	//cam_controls.set(libcamera::controls::LensPosition, lens_position);
 	
-	printf("Updated controls:   a:%0.2f  e:%imicroseconds b:%0.2f c:%0.2f s:%0.2f\n", analogue_gain, exposure_time, brightness, contrast, saturation);
+	//printf("Updated controls:   a:%0.2f  e:%imicroseconds b:%0.2f c:%0.2f s:%0.2f\n", analogue_gain, exposure_time, brightness, contrast, saturation);
 	
 	queue_request(request);
 	//camera->queueRequest(request);

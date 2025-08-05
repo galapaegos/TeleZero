@@ -48,6 +48,8 @@ public:
 	int lines_per_row;
 	int padding;
 	
+	int64_t sequence;
+	
 	float analogue_gain;
 	int32_t exposure_time;
 	
