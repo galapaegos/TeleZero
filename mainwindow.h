@@ -56,6 +56,7 @@ private:
 	int total_images;
 	std::string session_path;
 	QLabel *temperature_info;
+	QLabel *sequence_info;
 	
 	QTimer view_idle_timer;
 };

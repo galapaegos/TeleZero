@@ -3,12 +3,14 @@
 
 #include <GL/glew.h>
 
+#include <QWidget>
 #include <QMouseEvent>
 #include <QOpenGLWidget>
 
 #include "glcheck.h"
 #include "Program.h"
 #include "Texture.h"
+#include "trackball.h"
 
 class LiveView : public QOpenGLWidget
 {
@@ -22,6 +24,8 @@ public:
 	
 	void set_buffer(const int &width, const int &height, const int &channels, std::vector<uint8_t> buffer);
 	void set_buffer(const int &width, const int &height, const int &channels, const uint8_t *buffer);
+	
+	int color_order;
 
 private:
 	void initializeGL();
@@ -35,6 +39,8 @@ private:
 	void wheelEvent(QWheelEvent *p);
 	
 	void image_dimensions(float &fw, float &fh);
+
+	glm::vec3 translate;
 	
 	int display_width;
 	int display_height;
@@ -50,6 +56,8 @@ private:
 	
 	std::shared_ptr<Program> program;
 	std::shared_ptr<Texture> live_texture;
+
+	Trackball trackball;
 };
 
 #endif

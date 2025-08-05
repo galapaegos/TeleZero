@@ -59,7 +59,11 @@ MainWindow::MainWindow(QWidget *parent)
 	temperature_info = new QLabel("Sensor Temperature: ", this);
 	temperature_info->setFrameStyle(QFrame::Panel | QFrame::Sunken);
 	
+	sequence_info = new QLabel("Sequence: 0", this);
+	sequence_info->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+	
 	statusBar()->addPermanentWidget(temperature_info, 1);
+	statusBar()->addPermanentWidget(sequence_info, 1);
 }
 
 MainWindow::~MainWindow()
@@ -124,6 +128,25 @@ void MainWindow::on_pixel_format_currentIndexChanged(int index)
 		ui->format_size->addItem(QString::fromStdString(sizes[i]));
 	}
 	ui->format_size->setStyleSheet("combobox-popup: 0;");
+	
+	if(pixel_format == "XRGB8888") {
+		ui->view->color_order = 3;
+	}
+	if(pixel_format == "XBGR8888") {
+		ui->view->color_order = 2;
+	}
+	if(pixel_format == "RGBA8888") {
+		ui->view->color_order = 0;
+	}
+	if(pixel_format == "BGRA8888") {
+		ui->view->color_order = 1;
+	}
+	if(pixel_format == "BGR888") {
+		ui->view->color_order = 1;
+	}
+	if(pixel_format == "RGB888") {
+		ui->view->color_order = 0;
+	}
 }
 
 void MainWindow::on_camera_gain_valueChanged()
@@ -183,6 +206,7 @@ void MainWindow::on_configure_camera_clicked()
 
 void MainWindow::on_start_camera_clicked()
 {
+	printf("Starting camera...\n");
 	camera->start_camera();
 	
 	QObject::connect(&view_idle_timer, &QTimer::timeout, this, &MainWindow::update_view);
@@ -193,6 +217,10 @@ void MainWindow::on_start_camera_clicked()
 
 void MainWindow::on_stop_camera_clicked()
 {
+	printf("Stopping camera...\n");
+	
+	view_idle_timer.stop();
+	
 	QObject::disconnect(&view_idle_timer, &QTimer::timeout, this, &MainWindow::update_view);
 	
 	camera->stop_camera();
@@ -220,8 +248,15 @@ void MainWindow::on_capture_begin_clicked()
 		printf("Please specify session name and id.\n");
 		return;
 	}
+
+	// Get time stamp
+	const std::time_t result = std::time(nullptr);
+	auto tm = std::localtime(&result);
+
+	auto time_stamp = format("%i_%i_%i", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+	printf("time_stamp:%s\n", time_stamp.c_str());
 	
-	session_path = format("%s/%s/%s", storage_path.c_str(), session_name.c_str(), session_id.c_str());
+	session_path = format("%s/%s/%s/%s", storage_path.c_str(), time_stamp.c_str(), session_name.c_str(), session_id.c_str());
 	
 	printf("Session_path: %s\n", session_path.c_str());
 	
@@ -246,8 +281,23 @@ void MainWindow::update_view() {
 	
 	if(begin_capture) {
 		if(captured_images < total_images) {
+			auto duplicate_buffer = buffer;
+			if(camera->channels == 3) {}
+			if(camera->channels == 4) {
+				switch(ui->view->color_order) {
+					case 3:
+					{
+						for(int64_t y = 0; y < camera->height; y++) {
+							for(int64_t x = 0; x < camera->width; x++) {
+								int64_t idx = (y * camera->width + x)*4;
+								std::swap(duplicate_buffer[idx + 0], duplicate_buffer[idx + 2]);
+							}
+						}
+					}break;
+				}
+			}
 			auto file = format("%s/image_%0.4i.tif", session_path.c_str(), captured_images);
-			write_tiff(file, camera->width, camera->height, camera->channels, buffer);
+			write_tiff(file, camera->width, camera->height, camera->channels, duplicate_buffer);
 		
 			captured_images++;
 		} else {
@@ -256,7 +306,9 @@ void MainWindow::update_view() {
 		}
 	}
 	
-	temperature_info->setText(QString::fromStdString(format("Sensor Temperature: %fC", camera->temperature)));
+	// Update info
+	temperature_info->setText(QString::fromStdString(format("Sensor Temperature: %0.2fC  %0.2fF", camera->temperature, (camera->temperature * 9 / 5) + 32.f)));
+	sequence_info->setText(QString::fromStdString(format("Sequence: %lld", camera->sequence)));
 	
 	ui->view->set_buffer(camera->width, camera->height, camera->channels, buffer);
 	ui->view->repaint();

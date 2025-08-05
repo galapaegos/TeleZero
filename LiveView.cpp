@@ -1,10 +1,11 @@
 #include "LiveView.h"
 
 #include <QApplication>
+#include <QScreen>
 #include <QWindow>
 
 LiveView::LiveView(QWidget *parent) : QOpenGLWidget(parent), display_width(0), display_height(0), ratio(0.f), camera_fov(55.f),
-	texture_width(0), texture_height(0), update_texture(false)
+	texture_width(0), texture_height(0), update_texture(false), translate(0.f, 0.f, 1.5f)
 {
 }
 
@@ -98,7 +99,8 @@ void LiveView::paintGL()
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(0.0, 0.0, 2.25, 0.0, 0.0, 2.25 - 2.0, 0.0, 1.0, 0.0);
+	//gluLookAt(0.0, 0.0, 2.25, 0.0, 0.0, 2.25 - 2.0, 0.0, 1.0, 0.0);
+	gluLookAt(translate.x, -translate.y, translate.z, translate.x, -translate.y, translate.z - 2.0, 0, 1, 0);
 	check_error();
 	
 	if(update_texture) {
@@ -121,6 +123,10 @@ void LiveView::paintGL()
 	check_error();
 
 	program->bind();
+	check_error();
+	
+	program->set_uniform("channels", texture_channel);
+	program->set_uniform("color_order", color_order);
 	check_error();
 	
 	// Not sure if this is legacy? Displaying a black quad...
@@ -177,15 +183,92 @@ void LiveView::resizeGL(int w, int h)
 	display_height = mh;
 	
 	ratio = float(display_width) / float(display_height);
-	
-	//printf("display_width: %i display_height: %i  ratio: %f\n", display_width, display_height, ratio);
 }
 
-void LiveView::mouseMoveEvent(QMouseEvent *p) {}
-void LiveView::mousePressEvent(QMouseEvent *p) {}
-void LiveView::mouseReleaseEvent(QMouseEvent *p) {}
+void LiveView::mouseMoveEvent(QMouseEvent *p) {
+	auto screen = window()->windowHandle()->screen();
 
-void LiveView::wheelEvent(QWheelEvent *p){}
+	auto window = size();
+
+	int sw = window.width() * screen->devicePixelRatio();
+	int sh = window.height() * screen->devicePixelRatio();
+
+	int tx = p->position().x() * screen->devicePixelRatio();
+	int ty = p->position().y() * screen->devicePixelRatio();
+		
+	int x = tx;
+	int y = display_height - ty;
+
+	if(p->buttons() == Qt::LeftButton) {
+	} else if(p->buttons() == Qt::MiddleButton) {
+		trackball.update(x, y);
+	} else if(p->buttons() == Qt::RightButton) {
+	}
+}
+
+void LiveView::mousePressEvent(QMouseEvent *p) {
+	auto screen = window()->windowHandle()->screen();
+
+	auto window = size();
+
+	int sw = window.width() * screen->devicePixelRatio();
+	int sh = window.height() * screen->devicePixelRatio();
+
+	int tx = p->position().x() * screen->devicePixelRatio();
+	int ty = p->position().y() * screen->devicePixelRatio();
+		
+	int x = tx;
+	int y = display_height - ty;
+
+	// left mouse button
+	if(p->buttons() == Qt::LeftButton) {
+	} else if(p->buttons() == Qt::MiddleButton) {
+		trackball.setManipulation(Manipulation::Manipulation_TransX, Manipulation::Manipulation_TransY);
+		trackball.grab(x, y);
+	} else if(p->buttons() == Qt::RightButton) {
+	}
+}
+
+void LiveView::mouseReleaseEvent(QMouseEvent *p) {
+	auto screen = window()->windowHandle()->screen();
+
+	auto window = size();
+
+	int sw = window.width() * screen->devicePixelRatio();
+	int sh = window.height() * screen->devicePixelRatio();
+
+	int tx = p->position().x() * screen->devicePixelRatio();
+	int ty = p->position().y() * screen->devicePixelRatio();
+
+	int x = tx;
+	int y = display_height - ty;
+
+	if(p->button() == Qt::LeftButton) {
+	} else if(p->button() == Qt::MiddleButton) {
+		trackball.release();
+
+		auto t = trackball.getTranslate();
+		translate.x -= t[0];
+		translate.y += t[1];
+
+		trackball.identity();
+	} else if(p->button() == Qt::RightButton) {
+	}
+}
+
+void LiveView::wheelEvent(QWheelEvent *p)
+{
+	// Increment the z distance by value
+	glm::ivec2 delta(p->angleDelta().x() / 15, p->angleDelta().y() / 15);
+
+	float factor = 0.01f;
+	if(translate.z - delta.y * factor > 0.25f && translate.z - delta.y * factor <= 2.f) {
+		translate.z -= delta.y * factor;
+
+		trackball.setMultiplier(Manipulation::Manipulation_TransX, 0.003f * (translate.z / 2.f));
+		trackball.setMultiplier(Manipulation::Manipulation_TransY, 0.003f * (translate.z / 2.f));
+	}
+}
 
 void LiveView::image_dimensions(float &fw, float &fh)
 {

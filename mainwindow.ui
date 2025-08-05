@@ -62,38 +62,16 @@
                 </item>
                 <item row="0" column="0">
                  <layout class="QGridLayout" name="gridLayout_3">
-                  <item row="11" column="0" colspan="2">
-                   <widget class="QPushButton" name="start_camera">
-                    <property name="text">
-                     <string>Start Camera</string>
+                  <item row="6" column="1">
+                   <widget class="QSpinBox" name="camera_exposure">
+                    <property name="minimum">
+                     <number>114</number>
                     </property>
-                   </widget>
-                  </item>
-                  <item row="9" column="0">
-                   <widget class="QLabel" name="label_7">
-                    <property name="text">
-                     <string>Saturation</string>
+                    <property name="maximum">
+                     <number>694422939</number>
                     </property>
-                   </widget>
-                  </item>
-                  <item row="8" column="0">
-                   <widget class="QLabel" name="label_5">
-                    <property name="text">
-                     <string>Contrast</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="1" column="1">
-                   <widget class="QComboBox" name="pixel_format">
-                    <property name="sizeAdjustPolicy">
-                     <enum>QComboBox::AdjustToContents</enum>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="12" column="0" colspan="2">
-                   <widget class="QPushButton" name="stop_camera">
-                    <property name="text">
-                     <string>Stop Camera</string>
+                    <property name="value">
+                     <number>32000</number>
                     </property>
                    </widget>
                   </item>
@@ -104,31 +82,10 @@
                     </property>
                    </widget>
                   </item>
-                  <item row="1" column="0">
-                   <widget class="QLabel" name="label_8">
-                    <property name="text">
-                     <string>Pixel Format</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="10" column="0" colspan="2">
-                   <widget class="Line" name="line_3">
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="3" column="0" colspan="2">
-                   <widget class="QPushButton" name="configure_camera">
-                    <property name="text">
-                     <string>Configure</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="5" column="0">
-                   <widget class="QLabel" name="label">
-                    <property name="text">
-                     <string>Analogue Gain</string>
+                  <item row="1" column="1">
+                   <widget class="QComboBox" name="pixel_format">
+                    <property name="sizeAdjustPolicy">
+                     <enum>QComboBox::AdjustToContents</enum>
                     </property>
                    </widget>
                   </item>
@@ -151,10 +108,128 @@
                     </property>
                    </widget>
                   </item>
+                  <item row="4" column="0" colspan="2">
+                   <widget class="Line" name="line_2">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="1">
+                   <widget class="QSpinBox" name="camera_gain">
+                    <property name="minimum">
+                     <number>1</number>
+                    </property>
+                    <property name="maximum">
+                     <number>16</number>
+                    </property>
+                    <property name="value">
+                     <number>1</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="label_8">
+                    <property name="text">
+                     <string>Pixel Format</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="7" column="1">
+                   <widget class="QDoubleSpinBox" name="camera_brightness">
+                    <property name="decimals">
+                     <number>2</number>
+                    </property>
+                    <property name="minimum">
+                     <double>-1.000000000000000</double>
+                    </property>
+                    <property name="maximum">
+                     <double>1.000000000000000</double>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.100000000000000</double>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="9" column="0">
+                   <widget class="QLabel" name="label_7">
+                    <property name="text">
+                     <string>Saturation</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="8" column="0">
+                   <widget class="QLabel" name="label_5">
+                    <property name="text">
+                     <string>Contrast</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="12" column="0" colspan="2">
+                   <widget class="QPushButton" name="stop_camera">
+                    <property name="text">
+                     <string>Stop Camera</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="10" column="0" colspan="2">
+                   <widget class="Line" name="line_3">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="8" column="1">
+                   <widget class="QDoubleSpinBox" name="camera_contrast">
+                    <property name="decimals">
+                     <number>2</number>
+                    </property>
+                    <property name="minimum">
+                     <double>0.000000000000000</double>
+                    </property>
+                    <property name="maximum">
+                     <double>32.000000000000000</double>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.100000000000000</double>
+                    </property>
+                    <property name="value">
+                     <double>1.000000000000000</double>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="0" colspan="2">
+                   <widget class="QPushButton" name="configure_camera">
+                    <property name="text">
+                     <string>Configure</string>
+                    </property>
+                   </widget>
+                  </item>
                   <item row="7" column="0">
                    <widget class="QLabel" name="label_6">
                     <property name="text">
                      <string>Brightness</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="0">
+                   <widget class="QLabel" name="label">
+                    <property name="text">
+                     <string>Analogue Gain</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="11" column="0" colspan="2">
+                   <widget class="QPushButton" name="start_camera">
+                    <property name="text">
+                     <string>Start Camera</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="0">
+                   <widget class="QLabel" name="label_4">
+                    <property name="text">
+                     <string>Format Size</string>
                     </property>
                    </widget>
                   </item>
@@ -188,85 +263,10 @@
                     </layout>
                    </widget>
                   </item>
-                  <item row="7" column="1">
-                   <widget class="QDoubleSpinBox" name="camera_brightness">
-                    <property name="decimals">
-                     <number>2</number>
-                    </property>
-                    <property name="minimum">
-                     <double>-1.000000000000000</double>
-                    </property>
-                    <property name="maximum">
-                     <double>1.000000000000000</double>
-                    </property>
-                    <property name="singleStep">
-                     <double>0.100000000000000</double>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="8" column="1">
-                   <widget class="QDoubleSpinBox" name="camera_contrast">
-                    <property name="decimals">
-                     <number>2</number>
-                    </property>
-                    <property name="minimum">
-                     <double>0.000000000000000</double>
-                    </property>
-                    <property name="maximum">
-                     <double>32.000000000000000</double>
-                    </property>
-                    <property name="singleStep">
-                     <double>0.100000000000000</double>
-                    </property>
-                    <property name="value">
-                     <double>1.000000000000000</double>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="4" column="0" colspan="2">
-                   <widget class="Line" name="line_2">
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="2" column="0">
-                   <widget class="QLabel" name="label_4">
-                    <property name="text">
-                     <string>Format Size</string>
-                    </property>
-                   </widget>
-                  </item>
                   <item row="6" column="0">
                    <widget class="QLabel" name="label_2">
                     <property name="text">
                      <string>Exposure (ms)</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="5" column="1">
-                   <widget class="QSpinBox" name="camera_gain">
-                    <property name="minimum">
-                     <number>1</number>
-                    </property>
-                    <property name="maximum">
-                     <number>16</number>
-                    </property>
-                    <property name="value">
-                     <number>1</number>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="6" column="1">
-                   <widget class="QSpinBox" name="camera_exposure">
-                    <property name="minimum">
-                     <number>114</number>
-                    </property>
-                    <property name="maximum">
-                     <number>694422939</number>
-                    </property>
-                    <property name="value">
-                     <number>32000</number>
                     </property>
                    </widget>
                   </item>

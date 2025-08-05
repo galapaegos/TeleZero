@@ -101,5 +101,4 @@ void Program::bind_parameter(const std::string &name, std::shared_ptr<Texture> t
 void Program::set_uniform(const std::string &loc, const int &value) {
     GLint position = get_uniform_location(loc);
     glUniform1i(position, value);
-	check_error();
 }

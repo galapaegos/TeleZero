@@ -15,6 +15,7 @@ find_package(PkgConfig REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(TIFF REQUIRED)
+find_package(glm REQUIRED)
 pkg_check_modules(CAMERA REQUIRED libcamera)
 
 find_library(LIBCAMERA_LIBRARY libcamera.so REQUIRED)
@@ -40,6 +41,8 @@ set(PROJECT_SOURCES
 		Shader.h
 		Texture.cpp
 		Texture.h
+        trackball.cpp
+        trackball.h
         main.cpp
         mainwindow.cpp
         mainwindow.h
@@ -78,7 +81,7 @@ endif()
 include_directories(. "${CAMERA_INCLUDE_DIRS}" "${GLEW_INCLUDE_DIRS}" "${TIFF_INCLUDE_DIRS}")
 set(LIBCAMERA_LIBRARIES "${LIBCAMERA_LIBRARY}" "${LIBCAMERA_BASE_LIBRARY}")
 target_link_directories(TeleZero PUBLIC /usr/lib/aarch64-linux-gnu)
-target_link_libraries(TeleZero PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::OpenGLWidgets "${LIBCAMERA_LIBRARIES}" "${GLEW_LIBRARIES}" "${TIFF_LIBRARIES}" OpenGL::OpenGL OpenGL::GLU)
+target_link_libraries(TeleZero PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::OpenGLWidgets "${LIBCAMERA_LIBRARIES}" "${GLEW_LIBRARIES}" "${TIFF_LIBRARIES}" OpenGL::OpenGL OpenGL::GLU glm::glm)
 
 set_target_properties(TeleZero PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
