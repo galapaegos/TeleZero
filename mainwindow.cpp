@@ -158,8 +158,8 @@ void MainWindow::on_camera_gain_valueChanged()
 void MainWindow::on_camera_exposure_valueChanged()
 {
 	// Converting from milliseconds to microseconds;
-	camera->exposure_time = ui->camera_exposure->value();
-	printf("Exposure Time: %i\n", camera->exposure_time);
+	camera->exposure_time = ui->camera_exposure->value() * 1000;
+	printf("Exposure Time: %i ms\n", camera->exposure_time);
 }
 
 void MainWindow::on_camera_brightness_valueChanged()
@@ -257,7 +257,7 @@ void MainWindow::on_capture_begin_clicked()
 	const std::time_t result = std::time(nullptr);
 	auto tm = std::localtime(&result);
 
-	auto time_stamp = format("%i_%i_%i", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+	auto time_stamp = format("%04i_%02i_%02i", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
 	printf("time_stamp:%s\n", time_stamp.c_str());
 	
 	session_path = format("%s/%s/%s/%s", storage_path.c_str(), time_stamp.c_str(), session_name.c_str(), session_id.c_str());
