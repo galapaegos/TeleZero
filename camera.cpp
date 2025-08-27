@@ -210,8 +210,6 @@ bool Camera::disconnect_camera()
 		camera->stop();
 
 		allocator->free(stream);
-		delete allocator;
-		
 		camera->release();
 		camera.reset();
 
