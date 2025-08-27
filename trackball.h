@@ -1,6 +1,8 @@
 #ifndef _Trackball_h_
 #define _Trackball_h_
 
+#include <GL/glew.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
