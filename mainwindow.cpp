@@ -306,9 +306,9 @@ void MainWindow::update_view() {
 			if(captured_images >= toss_frames) {
 				auto file = format("%s/image_%0.4i.tif", session_path.c_str(), captured_images);
 				write_tiff(file, camera->width, camera->height, camera->channels, duplicate_buffer);
-		
-				captured_images++;
 			}
+
+			captured_images++;
 		
 			printf("captured %i of %i\n", captured_images, total_images + toss_frames);
 		} else {
