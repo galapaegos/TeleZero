@@ -25,7 +25,7 @@ std::vector<int> get_selected_rows(QList<QTableWidgetItem *> list)
 }
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), begin_capture(0), captured_images(0), total_images(0)
+    : QMainWindow(parent), begin_capture(0), captured_images(0), total_images(0), current_sequence(-1)
 {
 	ui = std::make_unique<Ui::MainWindow>();
     ui->setupUi(this);
@@ -226,6 +226,10 @@ void MainWindow::on_stop_camera_clicked()
 	camera->stop_camera();
 }
 
+void MainWindow::on_crosshair_clicked(){
+	ui->view->set_crosshair_visible(ui->crosshair->isChecked());
+}
+
 void MainWindow::on_capture_path_clicked()
 {
 	auto directory = QFileDialog::getExistingDirectory().toStdString();
@@ -271,10 +275,11 @@ void MainWindow::on_capture_cancel_clicked(){
 }
 
 void MainWindow::update_view() {
-	//auto width = ui->camera_width->value();
-	//auto height = ui->camera_height->value();
-	
-	//printf("MainWindow::update_view()\n");
+	if(camera->sequence == current_sequence) {
+		return;
+	}
+
+	current_sequence = camera->sequence;
 	
 	std::vector<uint8_t> buffer;
 	camera->get_image(buffer);

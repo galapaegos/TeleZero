@@ -42,6 +42,8 @@ private Q_SLOTS:
 	
 	void on_start_camera_clicked();
 	void on_stop_camera_clicked();
+
+	void on_crosshair_clicked();
 	
 	void on_capture_path_clicked();
 	void on_capture_begin_clicked();
@@ -54,6 +56,7 @@ private:
 	int begin_capture;
 	int captured_images;
 	int total_images;
+	int current_sequence;
 	std::string session_path;
 	QLabel *temperature_info;
 	QLabel *sequence_info;

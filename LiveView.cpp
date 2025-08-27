@@ -5,7 +5,7 @@
 #include <QWindow>
 
 LiveView::LiveView(QWidget *parent) : QOpenGLWidget(parent), display_width(0), display_height(0), ratio(0.f), camera_fov(55.f),
-	texture_width(0), texture_height(0), update_texture(false), translate(0.f, 0.f, 1.5f)
+	texture_width(0), texture_height(0), update_texture(false), translate(0.f, 0.f, 1.5f), show_crosshair(false)
 {
 }
 
@@ -166,6 +166,16 @@ void LiveView::paintGL()
 	glVertex3f(-fw, -fh, 0);
 	glEnd();
 	check_error();
+
+	if(show_crosshair) {
+		glColor4f(1, 0, 0, 1);
+		glBegin(GL_LINES);
+		glVertex3f(0, -fh, 0);
+		glVertex3f(0, fh, 0);
+
+		glVertex3f(-fw, 0, 0);
+		glVertex3f(fw, 0, 0);
+	}
 
 	glEnable(GL_DEPTH_TEST);
 	check_error();
