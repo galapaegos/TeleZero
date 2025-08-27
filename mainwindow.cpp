@@ -25,7 +25,7 @@ std::vector<int> get_selected_rows(QList<QTableWidgetItem *> list)
 }
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), begin_capture(0), captured_images(0), total_images(0), current_sequence(-1)
+    : QMainWindow(parent), begin_capture(0), toss_frames(0), captured_images(0), total_images(0), current_sequence(-1)
 {
 	ui = std::make_unique<Ui::MainWindow>();
     ui->setupUi(this);
@@ -247,6 +247,7 @@ void MainWindow::on_capture_begin_clicked()
 	auto session_name = ui->session_name->text().toStdString();
 	auto session_id = ui->session_id->text().toStdString();
 	total_images = ui->image_captures->value();
+	toss_frames = ui->toss_first_frames->values();
 	
 	if(session_name.compare("") == 0 || session_id.compare("") == 0) {
 		printf("Please specify session name and id.\n");
@@ -285,7 +286,7 @@ void MainWindow::update_view() {
 	camera->get_image(buffer);
 	
 	if(begin_capture) {
-		if(captured_images < total_images) {
+		if(captured_images < total_images + toss_frames) {
 			auto duplicate_buffer = buffer;
 			if(camera->channels == 3) {}
 			if(camera->channels == 4) {
@@ -301,6 +302,11 @@ void MainWindow::update_view() {
 					}break;
 				}
 			}
+
+			if(captured_images < toss_frames) {
+				continue;
+			}
+			
 			auto file = format("%s/image_%0.4i.tif", session_path.c_str(), captured_images);
 			write_tiff(file, camera->width, camera->height, camera->channels, duplicate_buffer);
 		

@@ -54,6 +54,7 @@ private:
     std::unique_ptr<Camera> camera;
 	
 	int begin_capture;
+	int toss_frames;
 	int captured_images;
 	int total_images;
 	int current_sequence;
