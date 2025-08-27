@@ -247,7 +247,7 @@ void MainWindow::on_capture_begin_clicked()
 	auto session_name = ui->session_name->text().toStdString();
 	auto session_id = ui->session_id->text().toStdString();
 	total_images = ui->image_captures->value();
-	toss_frames = ui->toss_first_frames->values();
+	toss_frames = ui->toss_first_frames->value();
 	
 	if(session_name.compare("") == 0 || session_id.compare("") == 0) {
 		printf("Please specify session name and id.\n");
@@ -306,7 +306,7 @@ void MainWindow::update_view() {
 			if(captured_images < toss_frames) {
 				continue;
 			}
-			
+
 			auto file = format("%s/image_%0.4i.tif", session_path.c_str(), captured_images);
 			write_tiff(file, camera->width, camera->height, camera->channels, duplicate_buffer);
 		
