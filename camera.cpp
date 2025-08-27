@@ -208,9 +208,14 @@ bool Camera::disconnect_camera()
 {
 	if(has_camera) {
 		camera->stop();
+
+		allocator->free(stream);
+		delete allocator;
 		
 		camera->release();
 		camera.reset();
+
+		camera_manager->stop();
 		
 		has_camera = false;
 	}
