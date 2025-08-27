@@ -305,7 +305,7 @@ void MainWindow::update_view() {
 			write_tiff(file, camera->width, camera->height, camera->channels, duplicate_buffer);
 		
 			captured_images++;
-			printf("captured %i of %i", captured_images, total_images);
+			printf("captured %i of %i\n", captured_images, total_images);
 		} else {
 			printf("capture complete\n");
 			begin_capture = 0;
