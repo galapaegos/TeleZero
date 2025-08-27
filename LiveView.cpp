@@ -175,6 +175,7 @@ void LiveView::paintGL()
 
 		glVertex3f(-fw, 0, 0);
 		glVertex3f(fw, 0, 0);
+		glEnd();
 	}
 
 	glEnable(GL_DEPTH_TEST);
