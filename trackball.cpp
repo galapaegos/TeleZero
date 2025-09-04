@@ -158,10 +158,10 @@ void Trackball::process(const int &delta, Manipulation m) {
 }
 
 void Trackball::glMult() {
-    //glm::mat4x4 m(1.0);
+    // glm::mat4x4 m(1.0);
 
-    //m = glm::translate(m, m_translate);
+    // m = glm::translate(m, m_translate);
 
-    //glMultMatrixf(glm::value_ptr(m));
-    //check_error();
+    // glMultMatrixf(glm::value_ptr(m));
+    // check_error();
 }

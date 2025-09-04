@@ -48,11 +48,11 @@ bool Shader::compile() {
         const char *buffer = shader_contents.c_str();
         glShaderSource(shader_id, 1, &buffer, nullptr);
         glCompileShader(shader_id);
-		check_error();
+        check_error();
 
         GLint success;
         glGetShaderiv(shader_id, GL_COMPILE_STATUS, &success);
-		check_error();
+        check_error();
 
         std::string log = get_program_log(shader_id);
         if(success == GL_FALSE) {
@@ -67,26 +67,26 @@ bool Shader::compile() {
 void Shader::release() {
     if(shader_id) {
         glDeleteShader(shader_id);
-		check_error();
+        check_error();
     }
 }
 
 void Shader::attach(const GLuint &program) {
     if(shader_id == 0) {
         shader_id = glCreateShader(shader_type);
-		check_error();
+        check_error();
     }
 
     if(program && shader_id) {
         glAttachShader(program, shader_id);
-		check_error();
+        check_error();
     }
 }
 
 void Shader::detach(const GLuint &program) {
     if(program && shader_id) {
         glDetachShader(program, shader_id);
-		check_error();
+        check_error();
     }
 }
 

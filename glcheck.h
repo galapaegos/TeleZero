@@ -7,5 +7,4 @@
 void print_gl_error(const std::string &file, const int &line);
 #define check_error() print_gl_error(__FILE__, __LINE__);
 
-#endif 
-
+#endif

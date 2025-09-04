@@ -20,7 +20,7 @@ public:
     explicit LiveView(QWidget *parent = nullptr);
     ~LiveView();
 	
-	void set_crosshair_visible(const bool &visible) { show_crosshair = visible;}
+	void set_crosshair_visible(const bool &visible) { show_crosshair = visible; }
 
 	void set_texture_type(const GLenum &format);
 	

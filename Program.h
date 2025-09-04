@@ -20,8 +20,8 @@ class Program {
     void unbind();
 
     void bind_parameter(const std::string &name, std::shared_ptr<Texture> tex);
-	
-	void set_uniform(const std::string &loc, const int &value);
+
+    void set_uniform(const std::string &loc, const int &value);
 
   protected:
     inline GLint get_uniform_location(const std::string &loc) { return glGetUniformLocation(program_id, loc.c_str()); }
